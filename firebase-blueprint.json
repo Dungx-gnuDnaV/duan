@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Student profile information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "classId": { "type": "string" },
+        "rfidUid": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "parentContact": { "type": "string" },
+        "email": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "classId", "rfidUid"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "School class or group",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "grade": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "AttendanceRecord": {
+      "title": "Attendance Record",
+      "description": "Log of a student's check-in or check-out",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["check-in", "check-out"] },
+        "verified": { "type": "boolean" },
+        "method": { "type": "string", "enum": ["rfid", "manual", "face-id"] }
+      },
+      "required": ["studentId", "timestamp", "type"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "History of notifications sent to parents",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "parentContact": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "message", "timestamp"]
+    }
+  },
+  "firestore": {
+    "classes": {
+      "schema": "Class",
+      "description": "Collection of classes"
+    },
+    "students": {
+      "schema": "Student",
+      "description": "Collection of students"
+    },
+    "attendance": {
+      "schema": "AttendanceRecord",
+      "description": "Attendance logs"
+    },
+    "notifications": {
+      "schema": "Notification",
+      "description": "Notification history"
+    }
+  }
+}

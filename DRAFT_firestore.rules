@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    // Updated isValidId to be more robust for match variables
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity Validation Helpers
+    function isValidStudent(data) {
+      return data.keys().hasAll(['name', 'classId', 'rfidUid']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 1000 &&
+             data.classId is string &&
+             data.rfidUid is string;
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0;
+    }
+
+    function isValidAttendance(data) {
+      return data.keys().hasAll(['studentId', 'timestamp', 'type', 'verified', 'method', 'status']) &&
+             data.studentId is string &&
+             data.timestamp == request.time &&
+             data.type in ['check-in', 'check-out'] &&
+             data.verified is bool &&
+             data.method in ['rfid', 'manual', 'face-id'] &&
+             data.status in ['on-time', 'late', 'absent'];
+    }
+
+    function isValidAlert(data) {
+      return data.keys().hasAll(['type', 'studentId', 'message', 'timestamp', 'status']) &&
+             data.studentId is string &&
+             data.type in ['late', 'present', 'absent'] &&
+             data.timestamp == request.time &&
+             data.message is string &&
+             data.status in ['unread', 'read'];
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['studentId', 'studentName', 'parentContact', 'message', 'type', 'status', 'timestamp']) &&
+             data.studentId is string &&
+             data.studentName is string &&
+             data.parentContact is string &&
+             data.message is string &&
+             data.type in ['late', 'present', 'absent'] &&
+             data.status in ['sending', 'sent', 'failed'] &&
+             data.timestamp == request.time;
+    }
+
+    // 1. Classes
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidClass(incoming());
+      allow update: if isSignedIn() && isValidClass(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    // 2. Students
+    match /students/{studentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidStudent(incoming());
+      allow update: if isSignedIn() && isValidStudent(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    // 3. Attendance
+    match /attendance/{recordId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidAttendance(incoming()) &&
+                    exists(/databases/$(database)/documents/students/$(incoming().studentId));
+      allow update: if false; 
+      allow delete: if isSignedIn();
+    }
+
+    // 4. Alerts
+    match /alerts/{alertId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidAlert(incoming());
+      allow update: if isSignedIn() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if isSignedIn();
+    }
+
+    // 5. Notifications
+    match /notifications/{notifId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidNotification(incoming());
+      allow update: if isSignedIn() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if isSignedIn();
+    }
+
+    // 6. System Config
+    match /system/{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+  }
+}

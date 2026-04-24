@@ -1,0 +1,6 @@
+{
+  "name": "EduTrack AI - Smart Attendance System",
+  "description": "An AI-powered student attendance management system featuring RFID simulation, Face ID verification, and deep behavioral analytics for schools and universities.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["AI Analysis", "Real-time Tracking", "Biometric Verification"]
+}
